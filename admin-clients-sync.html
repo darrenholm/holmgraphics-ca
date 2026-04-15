@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Sync — Holm Graphics Admin</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3e;
+      --accent: #2CA01C; --accent-light: #3dba2a;
+      --text: #e2e8f0; --muted: #94a3b8;
+      --danger: #ef4444; --warn: #f59e0b; --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .logo { font-weight: 900; font-size: 1.3rem; color: var(--accent); }
+    .header h1 { font-size: 1.2rem; font-weight: 700; }
+    .back { color: var(--muted); text-decoration: none; font-size: 0.9rem; margin-left: auto; }
+    .page { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; }
+    .stat .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0.5rem; }
+    .stat .value { font-size: 2rem; font-weight: 800; }
+    .value.green { color: var(--success); }
+    .value.warn  { color: var(--warn); }
+    .value.muted { color: var(--muted); }
+    .sync-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .btn { padding: 0.6rem 1.3rem; border-radius: 8px; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-light); }
+    .btn-secondary { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: rgba(255,255,255,.1); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: none; margin-bottom: 0.75rem; }
+    .progress-bar.active { display: block; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width .4s; }
+    .sync-msg { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+    .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; margin-bottom: 1rem; display: none; }
+    .alert.show { display: block; }
+    .alert.success { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25); color: var(--success); }
+    .alert.error   { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); color: var(--danger); }
+    .alert.warn    { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.25); color: var(--warn); }
+
+    /* Search */
+    .search-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .search-bar input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; color: var(--text); font-size: 0.875rem; }
+    .search-bar input:focus { outline: none; border-color: var(--accent); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 0.65rem 1rem; text-align: left; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+    td { padding: 0.75rem 1rem; font-size: 0.875rem; border-bottom: 1px solid rgba(42,45,62,.5); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+    .pill.synced { background: rgba(34,197,94,.12); color: var(--success); }
+    .pill.unsynced { background: rgba(245,158,11,.12); color: var(--warn); }
+    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--text); cursor: pointer; }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm:disabled { opacity: .4; cursor: not-allowed; }
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+    .filter-tabs { display: flex; gap: 4px; margin-bottom: 1rem; }
+    .filter-tab { padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 0.82rem; cursor: pointer; }
+    .filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">HG</span>
+  <h1>Client ↔ QuickBooks Sync</h1>
+  <a href="admin-quickbooks.html" class="back">← QB Dashboard</a>
+</div>
+
+<div class="page">
+  <div id="alert" class="alert"></div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat"><div class="label">Total Clients</div><div class="value muted" id="stat-total">—</div></div>
+    <div class="stat"><div class="label">Synced to QB</div><div class="value green" id="stat-synced">—</div></div>
+    <div class="stat"><div class="label">Not in QB</div><div class="value warn" id="stat-unsynced">—</div></div>
+  </div>
+
+  <!-- Sync Actions -->
+  <div class="card">
+    <h2>Sync Actions</h2>
+    <div class="sync-actions">
+      <button class="btn btn-primary" onclick="pushAll()">⬆ Push All to QB</button>
+      <button class="btn btn-primary" onclick="pullAll()">⬇ Pull All from QB</button>
+      <button class="btn btn-secondary" onclick="loadAll()">↻ Refresh</button>
+    </div>
+    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="sync-msg" id="sync-msg">
+      Push sends your local clients to QuickBooks. Pull imports QB customers into your client list.
+    </div>
+  </div>
+
+  <!-- Client List -->
+  <div class="card">
+    <h2>
+      Client List
+      <span style="font-size:0.8rem;color:var(--muted);font-weight:400" id="client-count"></span>
+    </h2>
+
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="Search by name, company or email…" oninput="filterClients()">
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('all', this)">All</button>
+      <button class="filter-tab" onclick="setFilter('synced', this)">Synced ✅</button>
+      <button class="filter-tab" onclick="setFilter('unsynced', this)">Not in QB ⚠</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>QB Status</th>
+            <th>QB ID</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="client-tbody">
+          <tr><td colspan="6" class="empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://holmgraphics-shop-api-production.up.railway.app/api/quickbooks';
+let authToken = localStorage.getItem('auth_token') || '';
+let allClients = [];
+let currentFilter = 'all';
+
+function headers() {
+  return { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' };
+}
+
+function showAlert(msg, type = 'success') {
+  const el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = `alert ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 6000);
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/clients/status`, { headers: headers() });
+    const d = await res.json();
+    document.getElementById('stat-total').textContent    = d.total || 0;
+    document.getElementById('stat-synced').textContent   = d.synced_to_qb || 0;
+    document.getElementById('stat-unsynced').textContent = d.not_in_qb || 0;
+  } catch(e) {}
+}
+
+async function loadClients() {
+  try {
+    const res = await fetch(`${API}/clients/list`, { headers: headers() });
+    allClients = await res.json();
+    filterClients();
+  } catch(e) {
+    document.getElementById('client-tbody').innerHTML =
+      `<tr><td colspan="6" class="empty">Failed to load clients</td></tr>`;
+  }
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterClients();
+}
+
+function filterClients() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let list = allClients;
+  if (currentFilter === 'synced')   list = list.filter(c => c.qb_customer_id);
+  if (currentFilter === 'unsynced') list = list.filter(c => !c.qb_customer_id);
+  if (q) list = list.filter(c =>
+    (c.company || '').toLowerCase().includes(q) ||
+    (c.fname || '').toLowerCase().includes(q) ||
+    (c.lname || '').toLowerCase().includes(q) ||
+    (c.email || '').toLowerCase().includes(q)
+  );
+
+  document.getElementById('client-count').textContent = `${list.length} clients`;
+
+  if (!list.length) {
+    document.getElementById('client-tbody').innerHTML =
+      `<tr><td colspan="6" class="empty">No clients found</td></tr>`;
+    return;
+  }
+
+  document.getElementById('client-tbody').innerHTML = list.map(c => `
+    <tr>
+      <td>${c.company || '—'}</td>
+      <td>${[c.fname, c.lname].filter(Boolean).join(' ') || '—'}</td>
+      <td style="color:var(--muted)">${c.email || '—'}</td>
+      <td><span class="pill ${c.qb_customer_id ? 'synced' : 'unsynced'}">
+        ${c.qb_customer_id ? '✅ In QB' : '⚠ Not in QB'}
+      </span></td>
+      <td style="font-family:monospace;font-size:0.78rem;color:var(--muted)">${c.qb_customer_id || '—'}</td>
+      <td>
+        ${!c.qb_customer_id
+          ? `<button class="btn-sm" onclick="pushOne(${c.id}, this)">Push to QB</button>`
+          : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function pushOne(id, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const res = await fetch(`${API}/clients/push/${id}`, { method: 'POST', headers: headers() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showAlert(`Client pushed to QuickBooks (QB ID: ${data.qb_customer_id})`);
+    await loadAll();
+  } catch(e) {
+    showAlert('Failed: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Push to QB';
+  }
+}
+
+async function pushAll() {
+  const bar = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+  const msg = document.getElementById('sync-msg');
+  bar.classList.add('active');
+  fill.style.width = '20%';
+  msg.textContent = 'Pushing all unsynced clients to QuickBooks…';
+  try {
+    fill.style.width = '60%';
+    const res = await fetch(`${API}/clients/push`, { method: 'POST', headers: headers() });
+    const data = await res.json();
+    fill.style.width = '100%';
+    if (data.error) throw new Error(data.error);
+    msg.textContent = `Done — ${data.pushed} pushed, ${data.failed} failed.`;
+    showAlert(`✅ ${data.pushed} clients pushed to QuickBooks!`);
+    setTimeout(() => { bar.classList.remove('active'); fill.style.width = '0%'; }, 1000);
+    await loadAll();
+  } catch(e) {
+    fill.style.width = '0%';
+    bar.classList.remove('active');
+    msg.textContent = 'Push failed: ' + e.message;
+    showAlert('Push failed: ' + e.message, 'error');
+  }
+}
+
+async function pullAll() {
+  const bar = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+  const msg = document.getElementById('sync-msg');
+  bar.classList.add('active');
+  fill.style.width = '20%';
+  msg.textContent = 'Pulling all customers from QuickBooks…';
+  try {
+    fill.style.width = '60%';
+    const res = await fetch(`${API}/clients/pull`, { method: 'POST', headers: headers() });
+    const data = await res.json();
+    fill.style.width = '100%';
+    if (data.error) throw new Error(data.error);
+    msg.textContent = `Done — ${data.imported} imported, ${data.updated} matched, ${data.skipped} already synced.`;
+    showAlert(`✅ Pull complete: ${data.imported} new, ${data.updated} matched from QuickBooks.`);
+    setTimeout(() => { bar.classList.remove('active'); fill.style.width = '0%'; }, 1000);
+    await loadAll();
+  } catch(e) {
+    fill.style.width = '0%';
+    bar.classList.remove('active');
+    msg.textContent = 'Pull failed: ' + e.message;
+    showAlert('Pull failed: ' + e.message, 'error');
+  }
+}
+
+async function loadAll() {
+  await Promise.all([loadStats(), loadClients()]);
+}
+
+loadAll();
+</script>
+</body>
+</html>
