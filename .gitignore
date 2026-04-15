@@ -1,0 +1,6 @@
+﻿AnyDesk.exe
+files.zip
+*.zip
+*.exe
+.DS_Store
+Thumbs.db
