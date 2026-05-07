@@ -1,5 +1,5 @@
 ﻿---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/cyg0916/public_html/
+    - export DEPLOYPATH=/home/cyq90916/holmgraphics-ca/
     - /bin/cp -R * $DEPLOYPATH
