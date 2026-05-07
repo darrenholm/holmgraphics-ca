@@ -2,4 +2,4 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/cyg0916/public_html/
-    - /bin/cp -R * 
+    - /bin/cp -R * $DEPLOYPATH
