@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Election Materials — Holm Graphics Inc.</title>
+  <meta name="description" content="Lawn signs, post cards, door hangers and decals for a municipal election campaign. Prices shown up front.">
+  <!--
+    holmgraphics.ca/election is the address to put on a card or say out loud.
+    The order form itself lives in the shop, which is a different service on a
+    different host, so this is the one hop between them.
+
+    A directory with an index.html rather than election.html, because the whole
+    point is a URL with no file extension on the end of it. Static hosting
+    serves index.html for a directory without any server configuration, which
+    is what WHC gives us.
+
+    Both a meta refresh and a script: the meta tag works with JavaScript off and
+    the script fires instantly, so nobody watches a blank page for a second.
+    The link is there for both of them failing, and for anyone who wants to see
+    where they are being sent before they go.
+  -->
+  <link rel="canonical" href="https://shop.holmgraphics.ca/shop/election">
+  <meta http-equiv="refresh" content="0; url=https://shop.holmgraphics.ca/shop/election">
+  <script>window.location.replace('https://shop.holmgraphics.ca/shop/election');</script>
+  <style>
+    body {
+      font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0; text-align: center; color: #1a1a1a;
+    }
+    a { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <p>
+    Taking you to the election order form…<br>
+    <a href="https://shop.holmgraphics.ca/shop/election">Continue to Holm Graphics election materials</a>
+  </p>
+</body>
+</html>
